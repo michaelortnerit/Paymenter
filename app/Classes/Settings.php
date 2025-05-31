@@ -500,6 +500,13 @@ class Settings
                     'database_type' => 'array',
                 ],
                 [
+                    'name' => 'registration_disabled',
+                    'label' => 'Disable User Registration',
+                    'type' => 'checkbox',
+                    'default' => false,
+                    'description' => 'Only allow existing users to log in. This will hide the registration page and prevent new users from signing up.',
+                ],
+                [
                     'name' => 'pagination',
                     'label' => 'Pagination',
                     'type' => 'number',
@@ -525,10 +532,15 @@ class Settings
 
     public static function tax()
     {
-        $country = Auth::user()->country ?? null;
-
         // Use once so the query is only run once
-        return once(function () use ($country) {
+        return once(function () {
+            $country = Auth::user()?->properties()->where('key', 'country')->value('value') ?? null;
+
+            // Change country to a two-letter country code if it's not already
+            if ($country) {
+                $country = array_search($country, config('app.countries')) ?: $country;
+            }
+
             if ($taxRate = TaxRate::where('country', $country)->first()) {
                 return $taxRate;
             } elseif ($taxRate = TaxRate::where('country', 'all')->first()) {
